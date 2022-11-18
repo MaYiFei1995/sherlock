@@ -1,11 +1,16 @@
 package com.android.sherlock;
 
+import android.accounts.AccountManager;
 import android.app.AndroidAppHelper;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.LocationManager;
 import android.media.MediaDrm;
 import android.net.ConnectivityManager;
@@ -13,6 +18,7 @@ import android.net.Network;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.os.Build;
+import android.os.Handler;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.provider.Settings;
@@ -54,7 +60,7 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
      *
      * @param lpparam @see {https://api.xposed.info/reference/de/robv/android/xposed/callbacks/XC_LoadPackage.LoadPackageParam.html}
      */
-    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam lpparam) throws ClassNotFoundException {
+    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam lpparam) {
 
         if (lpparam == null) {
             return;
@@ -63,25 +69,29 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
         final ApplicationInfo appInfo = lpparam.appInfo;
 
         // IMEI
-        XposedHelpers.findAndHookMethod(
-                TelephonyManager.class.getName(),
-                lpparam.classLoader,
-                "getDeviceId",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getDeviceId()获取IMEI";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getDeviceId",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getDeviceId()获取IMEI";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
         XposedHelpers.findAndHookMethod(
                 TelephonyManager.class.getName(),
                 lpparam.classLoader,
@@ -102,25 +112,29 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
                     }
                 }
         );
-        XposedHelpers.findAndHookMethod(
-                TelephonyManager.class.getName(),
-                lpparam.classLoader,
-                "getImei",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getImei()获取IMEI";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getImei",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getImei()获取IMEI";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
         XposedHelpers.findAndHookMethod(
                 TelephonyManager.class.getName(),
                 lpparam.classLoader,
@@ -143,439 +157,794 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
         );
 
         // MEID
-        XposedHelpers.findAndHookMethod(
-                TelephonyManager.class.getName(),
-                lpparam.classLoader,
-                "getMeid",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getMeid()获取MEID";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
-
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-        XposedHelpers.findAndHookMethod(
-                TelephonyManager.class.getName(),
-                lpparam.classLoader,
-                "getMeid",
-                int.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getMeid(int)获取MEID";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
-
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-
-        // OAID--仅Hook通过SDK获取
-        XposedHelpers.findAndHookMethod(
-                "com.bun.miitmdid.core.MdidSdkHelper",
-                lpparam.classLoader,
-                "InitSdk",
-                String.class, boolean.class, Class.forName("com.bun.miitmdid.interfaces.IIdentifierListener"),
-                new XC_MethodHook() {
-
-                    boolean isNeedPrintStack;
-
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        if (param.args[0] != null && param.args[0].equals(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)) {
-                            isNeedPrintStack = true;
-                            String msg = "调用MediaDrm获取ID";
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getMeid",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getMeid()获取MEID";
                             XposedBridge.log(msg);
                             showToast(appInfo, msg);
                         }
-                    }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        if (isNeedPrintStack) {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
                         }
-                        super.afterHookedMethod(param);
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getMeid",
+                    int.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getMeid(int)获取MEID";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+//        NoSuchMethodError?
+//        // OAID--仅Hook通过SDK获取
+//        try {
+//            XposedHelpers.findAndHookMethod(
+//                    MdidSdkHelper.class.getName(),
+//                    lpparam.classLoader,
+//                    "InitSdk",
+//                    Context.class, boolean.class, IIdentifierListener.class,
+//                    new XC_MethodHook() {
+//
+//                        boolean isNeedPrintStack;
+//
+//                        @Override
+//                        protected void beforeHookedMethod(MethodHookParam param) {
+//                            if (param.args[0] != null && param.args[0].equals(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)) {
+//                                isNeedPrintStack = true;
+//                                String msg = "调用MdidSdkHelper获取OAID";
+//                                XposedBridge.log(msg);
+//                                showToast(appInfo, msg);
+//                            }
+//                        }
+//
+//                        @Override
+//                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+//                            if (isNeedPrintStack) {
+//                                XposedBridge.log(getMethodStack());
+//                            }
+//                            super.afterHookedMethod(param);
+//                        }
+//                    }
+//            );
+//        } catch (Throwable tr) {
+//            tr.printStackTrace();
+//        }
 
         // DRM
-        XposedHelpers.findAndHookMethod(
-                MediaDrm.class.getName(),
-                lpparam.classLoader,
-                "getPropertyByteArray",
-                String.class,
-                new XC_MethodHook() {
+        try {
+            XposedHelpers.findAndHookMethod(
+                    MediaDrm.class.getName(),
+                    lpparam.classLoader,
+                    "getPropertyByteArray",
+                    String.class,
+                    new XC_MethodHook() {
 
-                    boolean isNeedPrintStack;
+                        boolean isNeedPrintStack;
 
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        if (param.args[0] != null && param.args[0].equals(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)) {
-                            isNeedPrintStack = true;
-                            String msg = "调用MediaDrm获取ID";
-                            XposedBridge.log(msg);
-                            showToast(appInfo, msg);
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            if (param.args[0] != null && param.args[0].equals(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)) {
+                                isNeedPrintStack = true;
+                                String msg = "调用MediaDrm获取ID";
+                                XposedBridge.log(msg);
+                                showToast(appInfo, msg);
+                            }
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            if (isNeedPrintStack) {
+                                XposedBridge.log(getMethodStack());
+                            }
+                            super.afterHookedMethod(param);
                         }
                     }
+            );
+        } catch (Throwable ignore) {
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        if (isNeedPrintStack) {
-                            XposedBridge.log(getMethodStack());
-                        }
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
+        }
 
         // GAID
-        XposedHelpers.findAndHookMethod(
-                "com.google.android.gms.ads.identifier.AdvertisingIdClient$Info",
-                lpparam.classLoader,
-                "getId",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用AdvertisingIdClient获取了GAID";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
-
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-
-        // NAI
-        XposedHelpers.findAndHookMethod(
-                TelephonyManager.class.getName(),
-                lpparam.classLoader,
-                "getNai",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getNai()获取NAI";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
-
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-
-        // IMSI
-        XposedHelpers.findAndHookMethod(
-                TelephonyManager.class.getName(),
-                lpparam.classLoader,
-                "getSubscriberId",
-                int.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getSubscriberId(int)获取了IMSI";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
-
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-
-        // SimSerialNumber
-        XposedHelpers.findAndHookMethod(
-                TelephonyManager.class.getName(),
-                lpparam.classLoader,
-                "getSimSerialNumber",
-                int.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getSimSerialNumber()获取了Sim卡串号";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
-
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-
-        // Serial
-        XposedHelpers.findAndHookMethod(
-                Build.class.getName(),
-                lpparam.classLoader,
-                "getSerial",
-                int.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "getSerial()获取了串号";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
-
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-
-        // AndroidID
-        XposedHelpers.findAndHookMethod(
-                Settings.Secure.class.getName(),
-                lpparam.classLoader,
-                "getString",
-                ContentResolver.class, String.class,
-                new XC_MethodHook() {
-
-                    private boolean isNeedPrintStack;
-
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        Object name = param.args[1];
-                        if (Settings.Secure.ANDROID_ID.equals(name)) {
-                            isNeedPrintStack = true;
-                            String msg = "getString()获取了AndroidID";
+        try {
+            XposedHelpers.findAndHookMethod(
+                    "com.google.android.gms.ads.identifier.AdvertisingIdClient$Info",
+                    lpparam.classLoader,
+                    "getId",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用AdvertisingIdClient获取了GAID";
                             XposedBridge.log(msg);
                             showToast(appInfo, msg);
                         }
-                    }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        if (isNeedPrintStack) {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
                         }
-                        super.afterHookedMethod(param);
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // NAI
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getNai",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getNai()获取NAI";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // IMSI
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getSubscriberId",
+                    int.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getSubscriberId(int)获取了IMSI";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // SimSerialNumber
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getSimSerialNumber",
+                    int.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getSimSerialNumber()获取了Sim卡串号";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // Serial
+        try {
+            XposedHelpers.findAndHookMethod(
+                    Build.class.getName(),
+                    lpparam.classLoader,
+                    "getSerial",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "getSerial()获取了串号";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // AndroidID
+        try {
+            XposedHelpers.findAndHookMethod(
+                    Settings.Secure.class.getName(),
+                    lpparam.classLoader,
+                    "getString",
+                    ContentResolver.class, String.class,
+                    new XC_MethodHook() {
+
+                        private boolean isNeedPrintStack;
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            Object name = param.args[1];
+                            if (Settings.Secure.ANDROID_ID.equals(name)) {
+                                isNeedPrintStack = true;
+                                String msg = "getString()获取了AndroidID";
+                                XposedBridge.log(msg);
+                                showToast(appInfo, msg);
+                            }
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            if (isNeedPrintStack) {
+                                XposedBridge.log(getMethodStack());
+                            }
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
 
         // N以下获取mac地址
-        XposedHelpers.findAndHookMethod(
-                WifiInfo.class.getName(),
-                lpparam.classLoader,
-                "getMacAddress",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getMacAddress()获取了mac地址";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    WifiInfo.class.getName(),
+                    lpparam.classLoader,
+                    "getMacAddress",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getMacAddress()获取了mac地址";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
+
         // 获取mac地址
-        XposedHelpers.findAndHookMethod(
-                NetworkInterface.class.getName(),
-                lpparam.classLoader,
-                "getHardwareAddress",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getHardwareAddress()获取了mac地址";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    NetworkInterface.class.getName(),
+                    lpparam.classLoader,
+                    "getHardwareAddress",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getHardwareAddress()获取了mac地址";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
 
         // IP
-        XposedHelpers.findAndHookMethod(
-                WifiInfo.class.getName(),
-                lpparam.classLoader,
-                "getIpAddress",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getIpAddress()获取了IP";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    WifiInfo.class.getName(),
+                    lpparam.classLoader,
+                    "getIpAddress",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getIpAddress()获取了IP";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
 
         // 定位
-        XposedHelpers.findAndHookMethod(
-                LocationManager.class.getName(),
-                lpparam.classLoader,
-                "getLastKnownLocation",
-                String.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getLastKnownLocation(String)获取了GPS地址";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    LocationManager.class.getName(),
+                    lpparam.classLoader,
+                    "getLastKnownLocation",
+                    String.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getLastKnownLocation(String)获取了GPS地址";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
 
         // 网络接入标识等信息
-        XposedHelpers.findAndHookMethod(
-                NetworkInterface.class.getName(),
-                lpparam.classLoader,
-                "getNetworkInterfaces",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getNetworkInterfaces()获取了网络信息";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    NetworkInterface.class.getName(),
+                    lpparam.classLoader,
+                    "getNetworkInterfaces",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getNetworkInterfaces()获取了网络信息";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
-        XposedHelpers.findAndHookMethod(
-                ConnectivityManager.class.getName(),
-                lpparam.classLoader,
-                "getNetworkCapabilities",
-                Network.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getNetworkCapabilities(Network)获取了网络信息";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+            );
+        } catch (Throwable ignore) {
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-        XposedHelpers.findAndHookMethod(
-                ConnectivityManager.class.getName(),
-                lpparam.classLoader,
-                "getActiveNetworkInfo",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getActiveNetworkInfo()获取了网络信息";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    ConnectivityManager.class.getName(),
+                    lpparam.classLoader,
+                    "getNetworkCapabilities",
+                    Network.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getNetworkCapabilities(Network)获取了网络信息";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
-        XposedHelpers.findAndHookMethod(
-                ConnectivityManager.class.getName(),
-                lpparam.classLoader,
-                "getNetworkInfo",
-                int.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getNetworkInfo(int)获取了网络信息";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+            );
+        } catch (Throwable ignore) {
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-        XposedHelpers.findAndHookMethod(
-                ConnectivityManager.class.getName(),
-                lpparam.classLoader,
-                "getNetworkInfo",
-                Network.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getNetworkInfo(Network)获取了网络信息";
-                        XposedBridge.log(msg);
-                        showToast(appInfo, msg);
-                    }
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    ConnectivityManager.class.getName(),
+                    lpparam.classLoader,
+                    "getActiveNetworkInfo",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getActiveNetworkInfo()获取了网络信息";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log(getMethodStack());
-                        super.afterHookedMethod(param);
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    ConnectivityManager.class.getName(),
+                    lpparam.classLoader,
+                    "getNetworkInfo",
+                    int.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getNetworkInfo(int)获取了网络信息";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    ConnectivityManager.class.getName(),
+                    lpparam.classLoader,
+                    "getNetworkInfo",
+                    Network.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getNetworkInfo(Network)获取了网络信息";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
 
         // 应用列表
+        try {
+            XposedHelpers.findAndHookMethod(
+                    "android.app.ApplicationPackageManager",
+                    lpparam.classLoader,
+                    "getInstalledPackages",
+                    int.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getInstalledPackages(int)获取了应用列表";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    "android.app.ApplicationPackageManager",
+                    lpparam.classLoader,
+                    "queryIntentActivities",
+                    Intent.class, int.class,
+                    new XC_MethodHook() {
+
+                        private boolean isNeedPrintStack;
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            if (param.args[0] != null) {
+                                Intent intent = (Intent) param.args[0];
+                                if (intent.getCategories().contains(Intent.CATEGORY_LAUNCHER)) {
+                                    isNeedPrintStack = true;
+                                    String msg = "调用queryIntentActivities(int)获取了应用列表";
+                                    XposedBridge.log(msg);
+                                    showToast(appInfo, msg);
+                                }
+                            }
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            if (isNeedPrintStack) {
+                                XposedBridge.log(getMethodStack());
+                            }
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // 通讯录
+        try {
+            XposedHelpers.findAndHookMethod(
+                    ContentResolver.class.getName(),
+                    lpparam.classLoader,
+                    "query",
+                    Uri.class, String[].class, String.class, String[].class, String.class,
+                    new XC_MethodHook() {
+
+                        private boolean isNeedPrintStack;
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            if (param.args[0] != null) {
+                                Uri uri = (Uri) param.args[0];
+                                String msg = null;
+                                if (uri == ContactsContract.CommonDataKinds.Phone.CONTENT_URI) {
+                                    msg = "调用query(Contacts)获取了通讯录";
+                                } else if (uri.toString().startsWith("content://sms")) {
+                                    msg = "调用query(\"SMS\")获取了短信";
+                                } else if (uri == CallLog.Calls.CONTENT_URI) {
+                                    msg = "调用query(CallLog)获取了通话记录";
+                                }
+                                if (msg != null) {
+                                    isNeedPrintStack = true;
+                                    XposedBridge.log(msg);
+                                    showToast(appInfo, msg);
+                                }
+                            }
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            if (isNeedPrintStack) {
+                                XposedBridge.log(getMethodStack());
+                            }
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // 剪切板
+        try {
+            XposedHelpers.findAndHookMethod(
+                    ClipboardManager.class.getName(),
+                    lpparam.classLoader,
+                    "getPrimaryClip",
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getPrimaryClip()获取了剪切板";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    ClipboardManager.class.getName(),
+                    lpparam.classLoader,
+                    "setPrimaryClip",
+                    ClipData.class,
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用setPrimaryClip()写入了剪切板";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // 账户
+        try {
+            XposedHelpers.findAndHookMethod(
+                    AccountManager.class.getName(),
+                    lpparam.classLoader,
+                    "getAccounts",
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用AccountManager.getAccounts()获取账户";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // 手机号|运营商
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getProvidersName",
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getProvidersName()获取运营商";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getNativePhoneNumber",
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getNativePhoneNumber()获取手机号";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getLine1Number",
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getLine1Number()获取手机号";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getSimOperator",
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getSimOperator()获取运营商";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
         XposedHelpers.findAndHookMethod(
-                PackageManager.class.getName(),
+                TelephonyManager.class.getName(),
                 lpparam.classLoader,
-                "getInstalledPackages",
-                int.class,
+                "getNetworkOperator",
                 new XC_MethodHook() {
+
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) {
-                        String msg = "调用getInstalledPackages(int)获取了应用列表";
+                        String msg = "调用getNetworkOperator()获取运营商";
                         XposedBridge.log(msg);
                         showToast(appInfo, msg);
                     }
@@ -587,78 +956,93 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
                     }
                 }
         );
-        XposedHelpers.findAndHookMethod(
-                PackageManager.class.getName(),
-                lpparam.classLoader,
-                "queryIntentActivities",
-                Intent.class, int.class,
-                new XC_MethodHook() {
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getNetworkOperatorName",
+                    new XC_MethodHook() {
 
-                    private boolean isNeedPrintStack;
-
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        if (param.args[0] != null) {
-                            Intent intent = (Intent) param.args[0];
-                            if (intent.getCategories().contains(Intent.CATEGORY_LAUNCHER)) {
-                                isNeedPrintStack = true;
-                                String msg = "调用queryIntentActivities(int)获取了应用列表";
-                                XposedBridge.log(msg);
-                                showToast(appInfo, msg);
-                            }
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getNetworkOperatorName()获取运营商";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
                         }
-                    }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        if (isNeedPrintStack) {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             XposedBridge.log(getMethodStack());
-                        }
-                        super.afterHookedMethod(param);
-                    }
-                }
-        );
-
-        // 通讯录
-        XposedHelpers.findAndHookMethod(
-                ContentResolver.class.getName(),
-                lpparam.classLoader,
-                "query",
-                Uri.class, String[].class, String.class, String[].class, String.class,
-                new XC_MethodHook() {
-
-                    private boolean isNeedPrintStack;
-
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        if (param.args[0] != null) {
-                            Uri uri = (Uri) param.args[0];
-                            String msg = null;
-                            if (uri == ContactsContract.CommonDataKinds.Phone.CONTENT_URI) {
-                                msg = "调用query(Contacts)获取了通讯录";
-                            } else if (uri.toString().startsWith("content://sms")) {
-                                msg = "调用query(\"SMS\")获取了短信";
-                            } else if (uri == CallLog.Calls.CONTENT_URI) {
-                                msg = "调用query(CallLog)获取了通话记录";
-                            }
-                            if (msg != null) {
-                                isNeedPrintStack = true;
-                                XposedBridge.log(msg);
-                                showToast(appInfo, msg);
-                            }
+                            super.afterHookedMethod(param);
                         }
                     }
+            );
+        } catch (Throwable ignore) {
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        if (isNeedPrintStack) {
+        }
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getSimOperatorName",
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getSimOperatorName()获取运营商";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
                         }
-                        super.afterHookedMethod(param);
                     }
-                }
-        );
+            );
+        } catch (Throwable ignore) {
 
+        }
+
+        // 传感器
+        try {
+            XposedHelpers.findAndHookMethod(
+                    SensorManager.class.getName(),
+                    lpparam.classLoader,
+                    "registerListener",
+                    SensorEventListener.class, Sensor.class, int.class, Handler.class,
+                    new XC_MethodHook() {
+
+                        boolean isNeedPrintStack;
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            if (param.args[1] != null) {
+                                Sensor sensor = (Sensor) param.args[1];
+                                String msg = null;
+                                if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                                    msg = "调用registerListener()注册运动传感器";
+                                }
+                                if (msg != null) {
+                                    XposedBridge.log(msg);
+                                    showToast(appInfo, msg);
+                                }
+                            }
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            if (isNeedPrintStack) {
+                                XposedBridge.log(getMethodStack());
+                            }
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
     }
 
     private void showToast(ApplicationInfo appInfo, String msg) {
