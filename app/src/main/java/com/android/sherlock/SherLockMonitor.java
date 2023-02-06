@@ -537,6 +537,54 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
 
         }
 
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getAllCellInfo",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getAllCellInfo()获取了位置信息";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable tr) {
+            tr.printStackTrace();
+        }
+
+        try {
+            XposedHelpers.findAndHookMethod(
+                    TelephonyManager.class.getName(),
+                    lpparam.classLoader,
+                    "getCellLocation",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getCellLocation()获取了位置信息";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable tr) {
+            tr.printStackTrace();
+        }
+
         // 网络接入标识等信息
         try {
             XposedHelpers.findAndHookMethod(

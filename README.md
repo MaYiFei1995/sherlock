@@ -6,13 +6,13 @@
 
 ## 说明
 
-v1.2 版本支持 Hook 以下信息的获取，可能不够全面，请自行添加相应的方法
+v1.3 版本支持 Hook 以下信息的获取，可能不够全面，请自行添加相应的方法
 
 - IMEI、 MEID、手机号、运营商、ICCID、NAI、用户识别码
 - DRM-ID、GAID、ANDROIDID
 - SERIAL
 - MAC、IP、网络接入标识
-- LOCATION
+- GetLastKnownLOCATION/GetCellLocation
 - 应用列表
 - 通讯录、短信、通话记录
 - 剪切板
