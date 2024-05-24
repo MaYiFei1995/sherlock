@@ -9,7 +9,7 @@
 v1.3 版本支持 Hook 以下信息的获取，可能不够全面，请自行添加相应的方法
 
 - IMEI、 MEID、手机号、运营商、ICCID、NAI、用户识别码
-- DRM-ID、GAID、ANDROIDID
+- DRM-ID、GAID、ANDROIDID、OAID
 - SERIAL
 - MAC、IP、网络接入标识
 - GetLastKnownLOCATION/GetCellLocation
@@ -52,4 +52,3 @@ v1.3 版本支持 Hook 以下信息的获取，可能不够全面，请自行添
 
 1. 根据检测项目增加方法 Hook
 2. 增加报告输出与日志本地存储
-3. 解决 Hook `MdidSdkHelper#InitSdk`方法时的`NoSuchMethod`错误

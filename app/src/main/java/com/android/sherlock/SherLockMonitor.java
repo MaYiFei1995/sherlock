@@ -58,7 +58,7 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
      *     }
      * );
      *
-     * @param lpparam @see {https://api.xposed.info/reference/de/robv/android/xposed/callbacks/XC_LoadPackage.LoadPackageParam.html}
+     * @param lpparam @see <a href="https://api.xposed.info/reference/de/robv/android/xposed/callbacks/XC_LoadPackage.LoadPackageParam.html">...</a>
      */
     public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam lpparam) {
 
@@ -205,40 +205,103 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
 
         }
 
-//        NoSuchMethodError?
-//        // OAID--仅Hook通过SDK获取
-//        try {
-//            XposedHelpers.findAndHookMethod(
-//                    MdidSdkHelper.class.getName(),
-//                    lpparam.classLoader,
-//                    "InitSdk",
-//                    Context.class, boolean.class, IIdentifierListener.class,
-//                    new XC_MethodHook() {
-//
-//                        boolean isNeedPrintStack;
-//
-//                        @Override
-//                        protected void beforeHookedMethod(MethodHookParam param) {
-//                            if (param.args[0] != null && param.args[0].equals(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)) {
-//                                isNeedPrintStack = true;
-//                                String msg = "调用MdidSdkHelper获取OAID";
-//                                XposedBridge.log(msg);
-//                                showToast(appInfo, msg);
-//                            }
-//                        }
-//
-//                        @Override
-//                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//                            if (isNeedPrintStack) {
-//                                XposedBridge.log(getMethodStack());
-//                            }
-//                            super.afterHookedMethod(param);
-//                        }
-//                    }
-//            );
-//        } catch (Throwable tr) {
-//            tr.printStackTrace();
-//        }
+        // OAID
+        try {
+            Class<?> mdidSdkHelperClass;
+            Class<?> iIdentifierListenerClass;
+            try {
+                mdidSdkHelperClass = lpparam.classLoader.loadClass("com.bun.miitmdid.core.MdidSdkHelper");
+                iIdentifierListenerClass = lpparam.classLoader.loadClass("com.bun.miitmdid.interfaces.IIdentifierListener");
+            } catch (Throwable tr) {
+                mdidSdkHelperClass = null;
+                iIdentifierListenerClass = null;
+            }
+            if (mdidSdkHelperClass != null) {
+                // init sdk
+                XposedHelpers.findAndHookMethod(
+                        mdidSdkHelperClass,
+                        "InitSdk",
+                        Context.class, boolean.class, iIdentifierListenerClass,
+                        new XC_MethodHook() {
+
+                            boolean isNeedPrintStack;
+
+                            @Override
+                            protected void beforeHookedMethod(MethodHookParam param) {
+                                isNeedPrintStack = true;
+                                String msg = "调用MdidSdkHelper#InitSdk()方法初始化";
+                                XposedBridge.log(msg);
+                                showToast(appInfo, msg);
+                            }
+
+                            @Override
+                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                if (isNeedPrintStack) {
+                                    XposedBridge.log(getMethodStack());
+                                }
+                                super.afterHookedMethod(param);
+                            }
+                        }
+                );
+            }
+            Class<?> idSupplierClass;
+            try {
+                idSupplierClass = lpparam.classLoader.loadClass("com.bun.miitmdid.interfaces.IdSupplier");
+            } catch (Throwable tr) {
+                tr.printStackTrace();
+                idSupplierClass = null;
+            }
+            if (idSupplierClass != null) {
+                // get oaid
+                XposedHelpers.findAndHookMethod(
+                        idSupplierClass,
+                        "getOAID",
+                        new XC_MethodHook() {
+                            @Override
+                            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                                String msg = "调用IdSupplier#getOAID()方法获取了OAID";
+                                XposedBridge.log(msg);
+                                showToast(appInfo, msg);
+                            }
+
+                            @Override
+                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                XposedBridge.log(getMethodStack());
+                            }
+                        }
+
+                );
+            }
+            Class<?> idProviderImplClass;
+            try {
+                idProviderImplClass = lpparam.classLoader.loadClass("com.android.id.impl.IdProviderImpl");
+            } catch (Throwable tr) {
+                tr.printStackTrace();
+                idProviderImplClass = null;
+            }
+            if (idProviderImplClass != null) {
+                // miui
+                XposedHelpers.findAndHookMethod(
+                        idProviderImplClass,
+                        "getOAID",
+                        new XC_MethodHook() {
+                            @Override
+                            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                                String msg = "调用IdProviderImpl#getOAID()方法获取了OAID";
+                                XposedBridge.log(msg);
+                                showToast(appInfo, msg);
+                            }
+
+                            @Override
+                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                XposedBridge.log(getMethodStack());
+                            }
+                        }
+                );
+            }
+        } catch (Throwable tr) {
+            tr.printStackTrace();
+        }
 
         // DRM
         try {
@@ -536,7 +599,6 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
         } catch (Throwable ignore) {
 
         }
-
         try {
             XposedHelpers.findAndHookMethod(
                     TelephonyManager.class.getName(),
@@ -560,7 +622,6 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
         } catch (Throwable tr) {
             tr.printStackTrace();
         }
-
         try {
             XposedHelpers.findAndHookMethod(
                     TelephonyManager.class.getName(),
@@ -1093,11 +1154,15 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
         }
     }
 
-    private void showToast(ApplicationInfo appInfo, String msg) {
+    private void showToast(ApplicationInfo appInfo, final String msg) {
         try {
-            Context context = AndroidAppHelper.currentApplication().getApplicationContext();
-            String label = appInfo.loadLabel(context.getPackageManager()).toString();
-            Toast.makeText(context, "[" + label + "]" + msg, Toast.LENGTH_SHORT).show();
+            final String label = appInfo.loadLabel(AndroidAppHelper.currentApplication().getPackageManager()).toString();
+            new Handler(AndroidAppHelper.currentApplication().getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(AndroidAppHelper.currentApplication(), "[" + label + "]" + msg, Toast.LENGTH_SHORT).show();
+                }
+            });
         } catch (Throwable ignore) {
 
         }
