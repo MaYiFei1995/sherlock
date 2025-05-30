@@ -1152,6 +1152,87 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
         } catch (Throwable ignore) {
 
         }
+
+        // 传感器列表
+        try {
+            XposedHelpers.findAndHookMethod(
+                    SensorManager.class.getName(),
+                    lpparam.classLoader,
+                    "getSensorList",
+                    int.class,
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getSensorList()获取传感器列表";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // 传感器定向获取
+        try {
+            XposedHelpers.findAndHookMethod(
+                    SensorManager.class.getName(),
+                    lpparam.classLoader,
+                    "getDefaultSensor",
+                    int.class,
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getSensorList()获取传感器列表";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
+
+        // 传感器定向获取
+        try {
+            XposedHelpers.findAndHookMethod(
+                    SensorManager.class.getName(),
+                    lpparam.classLoader,
+                    "getDefaultSensor",
+                    int.class, boolean.class,
+                    new XC_MethodHook() {
+
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            String msg = "调用getDefaultSensor()获取默认传感器";
+                            XposedBridge.log(msg);
+                            showToast(appInfo, msg);
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (Throwable ignore) {
+
+        }
     }
 
     private void showToast(ApplicationInfo appInfo, final String msg) {
