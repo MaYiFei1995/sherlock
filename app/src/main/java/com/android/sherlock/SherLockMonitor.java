@@ -805,7 +805,7 @@ public class SherLockMonitor implements IXposedHookLoadPackage {
                         protected void beforeHookedMethod(MethodHookParam param) {
                             if (param.args[0] != null) {
                                 Intent intent = (Intent) param.args[0];
-                                if (intent.getCategories().contains(Intent.CATEGORY_LAUNCHER)) {
+                                if (intent.getCategories() != null && intent.getCategories().contains(Intent.CATEGORY_LAUNCHER)) {
                                     isNeedPrintStack = true;
                                     String msg = "调用queryIntentActivities(int)获取了应用列表";
                                     XposedBridge.log(msg);
